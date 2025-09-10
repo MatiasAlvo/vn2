@@ -44,11 +44,6 @@ conda env create -f environment.yml
 conda activate neural_inventory_control
 ```
 
-5. Install torch with pip:
-```
-pip install torch
-```
-
 ## Usage
 
 The main functionalities for the code are in the following scripts:
