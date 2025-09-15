@@ -1,9 +1,11 @@
-# Neural Inventory Control
-Implementation of Hindsight Differentiable Policy Optimization, as described in the paper [Neural Inventory Control in Networks via Hindsight Differentiable Policy Optimization](https://arxiv.org/abs/2306.11246).
+# Deep Reinforcement Learning for Inventory Networks: Toward Reliable Policy Optimization
+Implementation of Hindsight Differentiable Policy Optimization, as described in the paper [Deep Reinforcement Learning for Inventory Networks: Toward Reliable Policy Optimization](https://arxiv.org/abs/2306.11246).
 
 ## Introduction
 
-Inventory management offers unique opportunities for reliably evaluating and applying deep reinforcement learning (DRL). We introduce Hindsight Differentiable Policy Optimization (HDPO), facilitating direct optimization of a DRL policy's hindsight performance using stochastic gradient descent. HDPO leverages two key elements: (i) an ability to backtest any policy's performance on a sample of historical scenarios, and (ii) the differentiability of the total cost incurred in a given scenario. We assess this approach in four problem classes where we can benchmark performance against the true optimum. HDPO algorithms consistently achieve near-optimal performance across all these classes, even when dealing with up to 60-dimensional raw state vectors. Moreover, we propose a natural neural network architecture to address problems with weak (or aggregate) coupling constraints between locations in an inventory network. This architecture utilizes weight duplication for "sibling" locations and state summarization. We demonstrate empirically that this design significantly enhances sample efficiency and provide justification for it through an asymptotic performance guarantee. Lastly, we assess HDPO in a setting that incorporates real sales data from a retailer, demonstrating its superiority over generalized newsvendor strategies.
+We argue that inventory management presents unique opportunities for the reliable application of deep reinforcement learning (DRL). To enable this, we emphasize and test two complementary techniques. The first is Hindsight Differentiable Policy Optimization (HDPO), which uses pathwise gradients from offline counterfactual simulations to directly and efficiently optimize policy performance. Unlike standard policy gradient methods that rely on high-variance score-function estimators, HDPO computes gradients by differentiating through the known system dynamics.
+Via extensive benchmarking, we show that HDPO recovers near-optimal policies in settings with known or bounded optima, is more robust than variants of the REINFORCE algorithm, and significantly outperforms generalized newsvendor heuristics on problems using real time series data. Our second technique aligns neural policy architectures with the topology of the inventory network. We exploit Graph Neural Networks (GNNs) as a natural inductive bias for encoding supply chain structure, demonstrate that they can represent optimal and near-optimal policies in two theoretical settings, and empirically show that they reduce data requirements across six diverse inventory problems.
+A key obstacle to progress in this area is the lack of standardized benchmark problems. To address this gap, we open-source a suite of benchmark environments, along with our full codebase, to promote transparency and reproducibility.
 
 ## Citation
 
@@ -42,11 +44,6 @@ conda env create -f environment.yml
 4. Activate the conda environment:
 ```
 conda activate neural_inventory_control
-```
-
-5. Install torch with pip:
-```
-pip install torch
 ```
 
 ## Usage
