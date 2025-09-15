@@ -1,6 +1,6 @@
 trainer_params: 
   'epochs': 20000
-  'do_dev_every_n_epochs': 10
+  'do_dev_every_n_epochs': 1
   'early_stopping_patience_epochs': 500
   'print_results_every_n_epochs': 1
   'save_model': False  # Path to save is defined in main script
