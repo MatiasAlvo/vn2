@@ -50,6 +50,19 @@ class Simulator(gym.Env):
             'period_shift': observation_params['demand']['period_shift'],
             }
         
+        # Add stockouts to internal data if available
+        if 'stockouts' in data:
+            self._internal_data['stockouts'] = data['stockouts']
+        
+        # Add time product features to internal data if available
+        time_product_feature_keys = [k for k in data.keys() if k.startswith('time_product_feature_')]
+        for key in time_product_feature_keys:
+            self._internal_data[key] = data[key]
+        
+        # Add product features to internal data if available
+        if 'product_features' in data:
+            self._internal_data['product_features'] = data['product_features']
+        
         if observation_params['time_features'] is not None:
             self._internal_data.update({k: data[k] for k in observation_params['time_features']})
         if observation_params['sample_features'] is not None:
@@ -213,23 +226,25 @@ class Simulator(gym.Env):
         
         store_lead_times = observation['lead_times']
         
-        observation['store_inventories'] = self.update_inventory_for_heterogeneous_lead_times(
-            store_inventory, 
-            post_inventory_on_hand, 
-            store_orders, 
-            store_lead_times, 
-            self._internal_data['allocation_shift']
-            )
-        
-        # # Uncomment the following line to simplify the update of store inventories.
-        # # Only works when all lead times are the same, and the lead time is larger than 1.
-        # # Only tested for one-store setting.
-        # observation['store_inventories'] = self.move_left_add_first_col_and_append(
+        # observation['store_inventories'] = self.update_inventory_for_heterogeneous_lead_times(
+        #     store_inventory, 
         #     post_inventory_on_hand, 
-        #     observation["store_inventories"], 
-        #     int(observation["lead_times"][0, 0]), 
-        #     action["stores"]
+        #     store_orders, 
+        #     store_lead_times, 
+        #     self._internal_data['allocation_shift']
         #     )
+        
+        # Uncomment the following line to simplify the update of store inventories.
+        # Only works when all lead times are the same, and the lead time is larger than 1.
+        # Only tested for one-store setting.
+        # print(f'lead time: {int(observation["lead_times"][0, 0])}')
+        # print(f'action: {action["stores"][0]}')
+        observation['store_inventories'] = self.move_left_add_first_col_and_append(
+            post_inventory_on_hand, 
+            observation["store_inventories"], 
+            int(observation["lead_times"][0, 0]), 
+            action["stores"]
+            )
         
         return reward.sum(dim=1)
     
@@ -329,6 +344,22 @@ class Simulator(gym.Env):
         # Initialize past demands in the observation
         if observation_params['demand']['past_periods'] > 0:
             observation['past_demands'] = self.update_past_demands(data, observation_params, self.batch_size, self.n_stores, current_period=0)
+
+        # Initialize past stockouts in the observation
+        if 'stockout' in observation_params and observation_params['stockout']['past_periods'] > 0 and 'stockouts' in data:
+            observation['past_stockouts'] = self.update_past_stockouts(data, observation_params, self.batch_size, self.n_stores, current_period=0)
+
+        # Initialize past time product features in the observation
+        if 'time_product_features_tensor' in observation_params and observation_params['time_product_features_tensor']['past_periods'] > 0:
+            # Find all time product feature keys in data
+            time_product_feature_keys = [k for k in data.keys() if k.startswith('time_product_feature_')]
+            if time_product_feature_keys:
+                for key in time_product_feature_keys:
+                    observation[f'past_{key}'] = self.update_past_time_product_features(data, observation_params, self.batch_size, self.n_stores, current_period=0, feature_key=key)
+
+        # Initialize product features in the observation
+        if 'product_features' in observation_params and 'product_features' in data:
+            observation['product_features'] = data['product_features']
 
         # Initialize time-related features, such as days to christmas
         if observation_params['time_features']:
@@ -457,6 +488,54 @@ class Simulator(gym.Env):
         
         return past_demands
     
+    def update_past_stockouts(self, data, observation_params, batch_size, stores, current_period):
+        """
+        Update the past stockouts in the observation
+        """
+        
+        past_periods = observation_params['stockout']['past_periods']
+        current_period_shifted = current_period + self._internal_data['period_shift']
+        
+        if current_period_shifted == 0:
+            past_stockouts = torch.zeros(batch_size, stores, past_periods).to(self.device)
+        # If current_period_shifted < past_periods, we fill with zeros at the left
+        else:
+            past_stockouts = data['stockouts'][:, :, max(0, current_period_shifted - past_periods): current_period_shifted]
+
+            fill_with_zeros = past_periods - (current_period_shifted - max(0, current_period_shifted - past_periods))
+            if fill_with_zeros > 0:
+                past_stockouts = torch.cat([
+                    torch.zeros(batch_size, stores, fill_with_zeros).to(self.device), 
+                    past_stockouts
+                    ], 
+                    dim=2)
+        
+        return past_stockouts
+    
+    def update_past_time_product_features(self, data, observation_params, batch_size, stores, current_period, feature_key):
+        """
+        Update the past time product features in the observation
+        """
+        
+        past_periods = observation_params['time_product_features_tensor']['past_periods']
+        current_period_shifted = current_period + self._internal_data['period_shift']
+        
+        if current_period_shifted == 0:
+            past_time_product_features = torch.zeros(batch_size, stores, past_periods).to(self.device)
+        # If current_period_shifted < past_periods, we fill with zeros at the left
+        else:
+            past_time_product_features = data[feature_key][:, :, max(0, current_period_shifted - past_periods): current_period_shifted]
+
+            fill_with_zeros = past_periods - (current_period_shifted - max(0, current_period_shifted - past_periods))
+            if fill_with_zeros > 0:
+                past_time_product_features = torch.cat([
+                    torch.zeros(batch_size, stores, fill_with_zeros).to(self.device), 
+                    past_time_product_features
+                    ], 
+                    dim=2)
+        
+        return past_time_product_features
+    
     def update_time_features(self, data, observation, observation_params, current_period):
         """
         Update all data that depends on time in the observation (e.g., days to christmas)
@@ -499,6 +578,30 @@ class Simulator(gym.Env):
                 self.n_stores,
                 current_period=min(self.observation['current_period'].item() + 1, self._internal_data['demands'].shape[2])  # do this before updating current period!
                 )
+        
+        # Update past stockouts
+        if 'stockout' in self.observation_params and self.observation_params['stockout']['past_periods'] > 0 and 'stockouts' in self._internal_data:
+            self.observation['past_stockouts'] = self.update_past_stockouts(
+                self._internal_data,
+                self.observation_params,
+                self.batch_size,
+                self.n_stores,
+                current_period=min(self.observation['current_period'].item() + 1, self._internal_data['stockouts'].shape[2])  # do this before updating current period!
+                )
+        
+        # Update past time product features
+        if 'time_product_features_tensor' in self.observation_params and self.observation_params['time_product_features_tensor']['past_periods'] > 0:
+            # Find all time product feature keys in internal data
+            time_product_feature_keys = [k for k in self._internal_data.keys() if k.startswith('time_product_feature_')]
+            for key in time_product_feature_keys:
+                self.observation[f'past_{key}'] = self.update_past_time_product_features(
+                    self._internal_data,
+                    self.observation_params,
+                    self.batch_size,
+                    self.n_stores,
+                    current_period=min(self.observation['current_period'].item() + 1, self._internal_data[key].shape[2]),  # do this before updating current period!
+                    feature_key=key
+                )
 
     def move_columns_left(self, tensor_to_displace, start_index, end_index):
         """
@@ -523,9 +626,10 @@ class Simulator(gym.Env):
         Move columns of inventory (deleting first column, as post_inventory_on_hand accounts for inventory_on_hand after demand arrives)
           to the left, add inventory_on_hand to first column, and append action at the end
         """
+        # inventory_on_hand + inventory[:, :, 1],
 
         return torch.stack([
             post_inventory_on_hand + inventory[:, :, 1], 
             *self.move_columns_left(inventory, 1, lead_time - 1), 
-            action
+            action.squeeze(-1)  # Remove the last dimension to make it 2D
             ], dim=2)

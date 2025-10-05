@@ -443,76 +443,55 @@ class DataDrivenNet(MyNeuralNetwork):
         For real data: uses past demands, underage costs, days from Christmas.
         For synthetic data: uses mean and std demand parameters.
         """
-        
-        # Check if we have multiple warehouses
-        n_warehouses = observation['warehouse_inventories'].size(1) if 'warehouse_inventories' in observation else 0
-        n_stores = observation['store_inventories'].size(1)
-        
         # Build input features list
         input_features = [observation['store_inventories']]
-        
-        # Add warehouse inventories if present
-        if n_warehouses > 0:
-            input_features.append(observation['warehouse_inventories'])
         
         # Add demand-related features (data driven is always real data)
         input_features.extend([
             observation['past_demands'],
-            observation['underage_costs'],
-            observation['holding_costs']
         ])
-        # Always include days from Christmas
-        input_features.append(observation['days_from_christmas'])
         
-        # Add lead times
-        # Always include full 3D lead time matrix [batch, n_stores, n_warehouses]
-        input_features.append(observation['lead_times'])
+        # Add stockout features if available
+        if 'past_stockouts' in observation:
+            input_features.append(observation['past_stockouts'])
+        
+        # Add time product features if available
+        time_product_feature_keys = [k for k in observation.keys() if k.startswith('past_time_product_feature_')]
+        for key in sorted(time_product_feature_keys):  # Sort to ensure consistent ordering
+            input_features.append(observation[key])
+        
+        # Add all time features specified in observation_params
+        if hasattr(self, 'scenario') and self.scenario and 'observation_params' in self.scenario.__dict__:
+            time_features_list = self.scenario.observation_params.get('time_features', [])
+            for feature_name in time_features_list:
+                if feature_name in observation:
+                    input_features.append(observation[feature_name])
+        
+        # Add product features if available - need to expand to match other features
+        if 'product_features' in observation:
+            # Product features have shape [samples, features], need to expand to [samples, stores, features]
+            # product_features = observation['product_features']  # [samples, features]
+            product_features = observation['product_features'].clone()
+            # n_stores = observation['store_inventories'].size(1)
+            # Expand to [samples, stores, features] to match other features
+            # Use repeat() to create a proper copy that maintains gradient flow
+            # product_features_expanded = product_features.unsqueeze(1).repeat(1, n_stores, 1)
+            product_features_expanded = product_features
+            # product_features_expanded = product_features.detach().unsqueeze(1).expand(-1, n_stores, -1).contiguous()
+
+
+            input_features.append(product_features_expanded)
         
         # Flatten and concatenate all features
         input_tensor = self.flatten_then_concatenate_tensors(input_features)
+        # print("Checking gradients:")
+        # for i, feat in enumerate(input_features):
+        #     print(f"Feature {i}: requires_grad={feat.requires_grad}")
+        #     print(f"Feature {i}: shape={feat.shape}")
+        # print(f"input_tensor requires_grad: {input_tensor.requires_grad}")
         
-        # Get outputs from network
-        if n_warehouses > 0:
-            # One or more warehouses: need to handle store allocations per warehouse
-            outputs = self.net['master'](input_tensor)
-            
-            # Get warehouse-store adjacency from scenario
-            warehouse_store_adjacency = self.scenario.problem_params['warehouse_store_adjacency']
-            adjacency_tensor = torch.tensor(warehouse_store_adjacency, dtype=torch.float32, device=outputs.device)
-            edge_mask = adjacency_tensor.transpose(0, 1)  # [n_stores, n_warehouses]
-            
-            # Network outputs n_warehouses + n_stores * n_warehouses values
-            warehouse_outputs = outputs[:, :n_warehouses]
-            store_outputs_flat = outputs[:, n_warehouses:]
-            
-            # Reshape and apply mask
-            store_outputs_all = store_outputs_flat.reshape(outputs.size(0), n_stores, n_warehouses)
-            
-            # Apply adjacency mask to zero out non-connected pairs
-            edge_mask_batch = edge_mask.unsqueeze(0).expand(outputs.size(0), -1, -1)
-            store_allocation = store_outputs_all * edge_mask_batch
-            
-            # Apply proportional allocation if warehouse inventory is limited
-            final_store_allocation = torch.zeros_like(store_allocation)
-            for w_idx in range(n_warehouses):
-                connected_stores_mask = edge_mask[:, w_idx]  # [n_stores]
-                if connected_stores_mask.sum() > 0:
-                    # Get allocations for this warehouse
-                    warehouse_allocations = store_allocation[:, :, w_idx]
-                    # Apply proportional allocation based on available inventory
-                    allocated = self.apply_proportional_allocation(
-                        warehouse_allocations,
-                        observation['warehouse_inventories'][:, w_idx]
-                    )
-                    final_store_allocation[:, :, w_idx] = allocated
-            
-            return {
-                'stores': final_store_allocation,
-                'warehouses': warehouse_outputs.unsqueeze(2)
-            }
-        else:
-            # Single warehouse or no warehouse
-            return {'stores': self.net['master'](input_tensor).unsqueeze(2)}
+        # Single warehouse or no warehouse
+        return {'stores': self.net['master'](input_tensor).unsqueeze(2)}
 
 class QuantilePolicy(MyNeuralNetwork):
     """
@@ -883,6 +862,22 @@ class GNN(MyNeuralNetwork):
             store_feature_list.append(observation['past_demands'])
             if 'days_from_christmas' in observation:
                 store_feature_list.append(observation['days_from_christmas'].unsqueeze(-1))
+            # Add stockout features if available
+            if 'past_stockouts' in observation:
+                store_feature_list.append(observation['past_stockouts'])
+            # Add time product features if available
+            time_product_feature_keys = [k for k in observation.keys() if k.startswith('past_time_product_feature_')]
+            for key in sorted(time_product_feature_keys):  # Sort to ensure consistent ordering
+                store_feature_list.append(observation[key])
+            # Add product features if available - need to expand to match other features
+            if 'product_features' in observation:
+                # Product features have shape [samples, features], need to expand to [samples, stores, features]
+                product_features = observation['product_features']  # [samples, features]
+                n_stores = observation['store_inventories'].size(1)
+                # Expand to [samples, stores, features] to match other features
+                # Use repeat() to create a proper copy that maintains gradient flow
+                product_features_expanded = product_features.unsqueeze(1).repeat(1, n_stores, 1)
+                store_feature_list.append(product_features_expanded)
         else:
             # Synthetic data case - include mean and std
             store_feature_list.extend([

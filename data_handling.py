@@ -17,6 +17,9 @@ class Scenario():
         self.observation_params = observation_params
         self.seeds = seeds
         self.demands = self.generate_demand_samples(problem_params, store_params, store_params['demand'], seeds)
+        self.stockouts = self.generate_stockout_samples(problem_params, store_params, store_params.get('stockout', {}), seeds)
+        self.time_product_features_tensor = self.generate_time_product_features_samples(problem_params, store_params, store_params.get('time_product_features_tensor', {}), seeds)
+        self.product_features = self.generate_product_features_samples(problem_params, store_params, store_params.get('product_features', {}), seeds)
         self.underage_costs = self.generate_data_for_samples_and_stores(problem_params, store_params['underage_cost'], seeds['underage_cost'], discrete=False)
         self.holding_costs = self.generate_data_for_samples_and_stores(problem_params, store_params['holding_cost'], seeds['holding_cost'], discrete=False)
         self.lead_times = self.generate_lead_times(problem_params, store_params['lead_time'], seeds['lead_time'])
@@ -57,6 +60,7 @@ class Scenario():
         """
 
         data =  {'demands': self.demands,
+                'stockouts': self.stockouts,
                 'underage_costs': self.underage_costs,
                 'holding_costs': self.holding_costs,
                 'lead_times': self.lead_times,
@@ -71,6 +75,18 @@ class Scenario():
                 'echelon_holding_costs': self.echelon_holding_costs,
                 'echelon_lead_times': self.echelon_lead_times,
                 }
+        
+        # Add time product features tensor data - each feature becomes a separate key
+        if self.time_product_features_tensor is not None:
+            n_features = self.time_product_features_tensor.shape[0]
+            for i in range(n_features):
+                # Convert from [features, samples, 1, periods] to [samples, 1, periods] for each feature
+                data[f'time_product_feature_{i}'] = self.time_product_features_tensor[i]
+        
+        # Add product features data - static features per sample
+        if self.product_features is not None:
+            # data['product_features'] = self.product_features
+            data['product_features'] = self.product_features.clone()  # Clone here!
         
         for k, v in self.time_features.items():
             data[k] = v
@@ -107,6 +123,30 @@ class Scenario():
             split_by['period'].append('demands')
         else:
             split_by['sample_index'].append('demands')
+        
+        # Handle stockouts - same logic as demands
+        if self.stockouts is not None:
+            if self.store_params['demand']['distribution'] == 'real':
+                split_by['period'].append('stockouts')
+            else:
+                split_by['sample_index'].append('stockouts')
+        
+        # Handle time product features tensor - same logic as demands
+        if self.time_product_features_tensor is not None:
+            if self.store_params['demand']['distribution'] == 'real':
+                # Add all time product feature keys to period-based splitting
+                n_features = self.time_product_features_tensor.shape[0]
+                for i in range(n_features):
+                    split_by['period'].append(f'time_product_feature_{i}')
+            else:
+                # Add all time product feature keys to sample-based splitting
+                n_features = self.time_product_features_tensor.shape[0]
+                for i in range(n_features):
+                    split_by['sample_index'].append(f'time_product_feature_{i}')
+        
+        # Handle product features - sample-based splitting (static features)
+        if self.product_features is not None:
+            split_by['sample_index'].append('product_features')
         
         # Add mean and std if they're going to be generated (not None)
         if 'mean' in self.observation_params['include_static_features'] and self.observation_params['include_static_features']['mean']:
@@ -146,6 +186,56 @@ class Scenario():
             demand = np.clip(demand, 0, None)
         
         return torch.tensor(demand)
+
+    def generate_stockout_samples(self, problem_params, store_params, stockout_params, seeds):
+        """
+        Generate stockout data
+        """
+        if not stockout_params or 'file_location' not in stockout_params:
+            return None
+            
+        # Read real stockout data
+        stockouts = torch.load(stockout_params['file_location'])[: self.num_samples]
+        return stockouts
+
+    def generate_time_product_features_samples(self, problem_params, store_params, time_product_features_params, seeds):
+        """
+        Generate time product features tensor data
+        """
+        if not time_product_features_params or 'file_location' not in time_product_features_params:
+            return None
+            
+        # Read real time product features data
+        # Shape: [features, samples, 1, periods]
+        time_product_features_tensor = torch.load(time_product_features_params['file_location'])
+        # Slice to get the right number of samples
+        time_product_features_tensor = time_product_features_tensor[:, :self.num_samples, :, :]
+        return time_product_features_tensor
+
+    def generate_product_features_samples(self, problem_params, store_params, product_features_params, seeds):
+        """
+        Generate product features data
+        """
+        if not product_features_params or 'file_location' not in product_features_params:
+            return None
+            
+        # Read real product features data
+        import pandas as pd
+        df = pd.read_csv(product_features_params['file_location'])
+        
+        # Select only the specified features
+        feature_columns = product_features_params.get('features', [])
+        if not feature_columns:
+            # Use all columns except the first one (usually index)
+            feature_columns = df.columns.tolist()
+        
+        # Extract the specified features
+        product_features_data = df[feature_columns].values
+        
+        # Convert to tensor and slice to get the right number of samples
+        product_features_tensor = torch.tensor(product_features_data[:self.num_samples], dtype=torch.float32)
+        
+        return product_features_tensor
 
     def adjust_seeds_for_consistency(self, problem_params, store_params, seeds):
         """

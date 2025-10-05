@@ -1,0 +1,124 @@
+seeds : 
+  'underage_cost': 28 
+  'holding_cost': 73 
+  'mean': 33
+  'coef_of_var': 92 
+  'lead_time': 41 
+  'demand': 57 
+  'initial_inventory': 4839
+
+test_seeds :  # Seeds for test set
+  'underage_cost': 36 
+  'holding_cost': 81 
+  'mean': 41 
+  'coef_of_var': 100
+  'lead_time': 49
+  'demand': 65
+  'initial_inventory': 4839
+
+sample_data_params:
+  'split_by_period': True
+  'train_periods': (0, 120)
+  'dev_periods': (104, 157)
+  'test_periods': (104, 157)
+
+problem_params : 
+  'n_stores': 1
+  'n_warehouses': 0
+  'n_extra_echelons': 0
+  'lost_demand': True
+  'maximize_profit': True
+  # 'maximize_profit': False
+
+params_by_dataset : 
+  'train': 
+    'n_samples': 599 # set equal to the number of rows in sales data!
+    'batch_size': 100 
+    'periods': 119 # set equal to the number of periods in "train_periods" - (period_shift + 1)
+    'ignore_periods': 2 # number of periods to ignore for reporting!
+  'dev': 
+    'n_samples': 599 # set equal to the number of rows in sales data!
+    'batch_size': 599
+    'periods': 53 # set equal to the number of periods in "dev_periods" - (period_shift + 1)
+    'ignore_periods': 2 # number of periods to ignore for reporting!
+  'test': 
+    'n_samples': 599 # set equal to the number of rows in sales data!
+    'batch_size': 599 
+    'periods': 53 # set equal to the number of periods in "test_periods" - (period_shift + 1)
+    'ignore_periods': 2 # number of periods to ignore for reporting!
+
+observation_params:
+  'include_warehouse_inventory': False
+  'include_static_features':
+    'holding_costs': True 
+    'underage_costs': True 
+    'lead_times': True 
+    'upper_bounds': False
+  'demand': 
+    'past_periods': 32 # number of periods to look back for demand! ie how many periods are given to the neural network policy as input
+    'period_shift': 0 # start x periods after the first period in the dataset
+  'stockout': 
+    'past_periods': 32 # number of periods to look back for stockout! ie how many periods are given to the neural network policy as input
+    'period_shift': 0 # start x periods after the first period in the dataset 
+  # 'time_product_features_tensor': 
+  #   'past_periods': 4 # number of periods to look back for time product features! ie how many periods are given to the neural network policy as input
+  #   'period_shift': 0 # start x periods after the first period in the dataset
+  'product_features': 
+    'features': ['Store', 'Product']
+    # 'features': ['Store', 'Product', 'ProductGroup', 'Division', 'Department', 'DepartmentGroup', 'StoreFormat', 'Format']
+  'time_features_file': 'vn2_processed_data/date_features.csv'
+  'time_features':
+    ['days_from_christmas', 'day_of_month', 'month_1', 'month_2', 'month_3', 'month_4', 'month_5', 'month_6', 'month_7', 'month_8', 'month_9', 'month_10', 'month_11', 'month_12']
+  'sample_features': null
+
+store_params: 
+  'demand': 
+    'distribution': 'real'
+    'file_location': 'vn2_processed_data/all_data/sales.pt'
+    'sample_across_stores': False
+    'expand': False
+    'clip': False
+    'decimals': 3
+  'stockout': 
+    'file_location': 'vn2_processed_data/all_data/stock.pt'
+    'sample_across_stores': False
+    'expand': False
+    'clip': False
+    'decimals': 3
+  # 'time_product_features_tensor': 
+  #   'file_location': 'vn2_processed_data/all_data/time_product_features.pt'
+  #   'sample_across_stores': False
+  #   'expand': False
+  #   'clip': False
+  #   'decimals': 3
+  'product_features': 
+    'file_location': 'vn2_processed_data/all_data/product_features.csv'
+    'features': ['Store', 'Product']
+    # 'features': ['Store']
+    # 'features': ['Store']
+    # 'features': ['Store', 'Product', 'ProductGroup', 'Division', 'Department', 'DepartmentGroup', 'StoreFormat', 'Format']
+  'lead_time': 
+    'sample_across_stores': False
+    'vary_across_samples': False
+    'expand': True
+    'value': 2
+  'holding_cost': 
+    'sample_across_stores': False 
+    'vary_across_samples': False
+    'expand': True
+    'value': 0.2
+  'underage_cost': 
+    'sample_across_stores': False
+    'vary_across_samples': False 
+    'expand': True
+    'value': 1.0
+  'initial_inventory': 
+    'sample': False
+    'inventory_periods': 2
+
+warehouse_params: 
+  null
+
+echelon_params: 
+  null
+
