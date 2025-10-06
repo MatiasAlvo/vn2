@@ -19,8 +19,8 @@ test_seeds :  # Seeds for test set
 sample_data_params:
   'split_by_period': True
   'train_periods': (0, 120)
-  'dev_periods': (104, 157)
-  'test_periods': (104, 157)
+  'dev_periods': (118, 157)
+  'test_periods': (118, 157)
 
 problem_params : 
   'n_stores': 1
@@ -39,12 +39,12 @@ params_by_dataset :
   'dev': 
     'n_samples': 599 # set equal to the number of rows in sales data!
     'batch_size': 599
-    'periods': 53 # set equal to the number of periods in "dev_periods" - (period_shift + 1)
+    'periods': 39 # set equal to the number of periods in "dev_periods" - (period_shift + 1)
     'ignore_periods': 2 # number of periods to ignore for reporting!
   'test': 
     'n_samples': 599 # set equal to the number of rows in sales data!
     'batch_size': 599 
-    'periods': 53 # set equal to the number of periods in "test_periods" - (period_shift + 1)
+    'periods': 39 # set equal to the number of periods in "test_periods" - (period_shift + 1)
     'ignore_periods': 2 # number of periods to ignore for reporting!
 
 observation_params:
@@ -55,10 +55,10 @@ observation_params:
     'lead_times': True 
     'upper_bounds': False
   'demand': 
-    'past_periods': 32 # number of periods to look back for demand! ie how many periods are given to the neural network policy as input
+    'past_periods': 16 # number of periods to look back for demand! ie how many periods are given to the neural network policy as input
     'period_shift': 0 # start x periods after the first period in the dataset
   'stockout': 
-    'past_periods': 32 # number of periods to look back for stockout! ie how many periods are given to the neural network policy as input
+    'past_periods': 16 # number of periods to look back for stockout! ie how many periods are given to the neural network policy as input
     'period_shift': 0 # start x periods after the first period in the dataset 
   # 'time_product_features_tensor': 
   #   'past_periods': 4 # number of periods to look back for time product features! ie how many periods are given to the neural network policy as input
@@ -74,25 +74,25 @@ observation_params:
 store_params: 
   'demand': 
     'distribution': 'real'
-    'file_location': 'vn2_processed_data/all_data/sales.pt'
+    'file_location': 'vn2_processed_data/new_data/sales.pt'
     'sample_across_stores': False
     'expand': False
     'clip': False
     'decimals': 3
   'stockout': 
-    'file_location': 'vn2_processed_data/all_data/stock.pt'
+    'file_location': 'vn2_processed_data/new_data/stock.pt'
     'sample_across_stores': False
     'expand': False
     'clip': False
     'decimals': 3
   # 'time_product_features_tensor': 
-  #   'file_location': 'vn2_processed_data/all_data/time_product_features.pt'
+  #   'file_location': 'vn2_processed_data/new_data/time_product_features.pt'
   #   'sample_across_stores': False
   #   'expand': False
   #   'clip': False
   #   'decimals': 3
   'product_features': 
-    'file_location': 'vn2_processed_data/all_data/product_features.csv'
+    'file_location': 'vn2_processed_data/new_data/product_features.csv'
     'features': ['Store', 'Product']
     # 'features': ['Store']
     # 'features': ['Store']
