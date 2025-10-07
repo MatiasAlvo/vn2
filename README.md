@@ -1,6 +1,10 @@
 # Deep Reinforcement Learning for Inventory Networks: Toward Reliable Policy Optimization
 Implementation of Hindsight Differentiable Policy Optimization, as described in the paper [Deep Reinforcement Learning for Inventory Networks: Toward Reliable Policy Optimization](https://arxiv.org/abs/2306.11246).
 
+## VN2 competion
+
+Go to `main_run.ipynb` for a simpler tutorial and to create and train your own Deep RL agents. Also, check out `vn2_data_analysis.ipynb` for an example on how to create the data that will be used as input for our policies.
+
 ## Introduction
 
 We argue that inventory management presents unique opportunities for the reliable application of deep reinforcement learning (DRL). To enable this, we emphasize and test two complementary techniques. The first is Hindsight Differentiable Policy Optimization (HDPO), which uses pathwise gradients from offline counterfactual simulations to directly and efficiently optimize policy performance. Unlike standard policy gradient methods that rely on high-variance score-function estimators, HDPO computes gradients by differentiating through the known system dynamics.
