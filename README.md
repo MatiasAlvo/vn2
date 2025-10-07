@@ -28,12 +28,12 @@ To set up the environment for this project, follow these steps:
 1. Clone this repository to your local machine:
 
 ```
-git clone git@github.com:MatiasAlvo/Neural_inventory_control.git
+git clone git@github.com:MatiasAlvo/vn2.git
 ```
 
 2. Navigate to the project directory:
 ```
-cd Neural_inventory_control
+cd vn2
 ```
 
 3. Create a conda environment using the provided environment.yml file

@@ -56,18 +56,17 @@ observation_params:
   'demand': 
     'past_periods': 16 # number of periods to look back for demand! ie how many periods are given to the neural network policy as input
     'period_shift': 0 # start x periods after the first period in the dataset
-  'stockout': 
+  'stockout': # set past_periods to 0 if you don't want to use!
     'past_periods': 16 # number of periods to look back for stockout! ie how many periods are given to the neural network policy as input
     'period_shift': 0 # start x periods after the first period in the dataset 
-  # 'time_product_features_tensor': 
-  #   'past_periods': 4 # number of periods to look back for time product features! ie how many periods are given to the neural network policy as input
+  # 'time_product_features_tensor':  # comment out if you don't want to use time product features!
+  #   'past_periods': 16 # Use same number of periods as demand and stockout
   #   'period_shift': 0 # start x periods after the first period in the dataset
-  'product_features': 
-    'features': ['Store', 'Product']
-    # 'features': ['Store', 'Product', 'ProductGroup', 'Division', 'Department', 'DepartmentGroup', 'StoreFormat', 'Format']
+  'product_features': # comment out if you don't want to use product features. If you set an empty list, it will raise an error! (i need to fix this bug)
+    'features': ['Store', 'Product']  # currently can use ['Store', 'Product', 'ProductGroup', 'Division', 'Department', 'DepartmentGroup', 'StoreFormat', 'Format']
   'time_features_file': 'vn2_processed_data/new_data/date_features.csv'
-  'time_features':
-    ['days_from_christmas', 'day_of_month', 'month_1', 'month_2', 'month_3', 'month_4', 'month_5', 'month_6', 'month_7', 'month_8', 'month_9', 'month_10', 'month_11', 'month_12']
+  # set an empty list if you don't want to use time features! If you comment out from the file, it will raise an error!
+  'time_features': ['days_from_christmas', 'day_of_month', 'month_1', 'month_2', 'month_3', 'month_4', 'month_5', 'month_6', 'month_7', 'month_8', 'month_9', 'month_10', 'month_11', 'month_12']
   'sample_features': null
 
 store_params: 
@@ -78,24 +77,21 @@ store_params:
     'expand': False
     'clip': False
     'decimals': 3
-  'stockout': 
+  'stockout': # set past_periods to 0 if you don't want to use! but dont comment out
     'file_location': 'vn2_processed_data/new_data/stock.pt'
     'sample_across_stores': False
     'expand': False
     'clip': False
     'decimals': 3
-  # 'time_product_features_tensor': 
+  # 'time_product_features_tensor':  # comment out if you don't want to use time product features!
   #   'file_location': 'vn2_processed_data/new_data/time_product_features.pt'
   #   'sample_across_stores': False
   #   'expand': False
   #   'clip': False
   #   'decimals': 3
-  'product_features': 
+  'product_features': # comment out if you don't want to use product features. If you set an empty list, it will raise an error! (i need to fix this bug)
     'file_location': 'vn2_processed_data/new_data/product_features.csv'
-    'features': ['Store', 'Product']
-    # 'features': ['Store']
-    # 'features': ['Store']
-    # 'features': ['Store', 'Product', 'ProductGroup', 'Division', 'Department', 'DepartmentGroup', 'StoreFormat', 'Format']
+    'features': ['Store', 'Product'] # currently can use ['Store', 'Product', 'ProductGroup', 'Division', 'Department', 'DepartmentGroup', 'StoreFormat', 'Format']
   'lead_time': 
     'sample_across_stores': False
     'vary_across_samples': False

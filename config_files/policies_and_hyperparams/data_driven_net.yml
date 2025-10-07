@@ -10,7 +10,7 @@ trainer_params :
   'epochs_between_save': 10  # Save if cost improved, and at least this number of epochs have passed
 
 optimizer_params: 
-  'learning_rate': 0.003
+  'learning_rate': 0.001
 
 nn_params: 
   'name': 'data_driven'
