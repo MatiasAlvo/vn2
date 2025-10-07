@@ -1,7 +1,7 @@
 # Deep Reinforcement Learning for Inventory Networks: Toward Reliable Policy Optimization
 Implementation of Hindsight Differentiable Policy Optimization, as described in the paper [Deep Reinforcement Learning for Inventory Networks: Toward Reliable Policy Optimization](https://arxiv.org/abs/2306.11246).
 
-## VN2 competion
+## VN2 competition
 
 Go to `main_run.ipynb` for a simpler tutorial and to create and train your own Deep RL agents. Also, check out `vn2_data_analysis.ipynb` for an example on how to create the data that will be used as input for our policies.
 
