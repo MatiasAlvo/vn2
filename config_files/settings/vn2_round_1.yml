@@ -56,11 +56,11 @@ observation_params:
   'demand': 
     'past_periods': 16 # number of periods to look back for demand! ie how many periods are given to the neural network policy as input
     'period_shift': 0 # start x periods after the first period in the dataset
-  'stockout': # set past_periods to 0 if you don't want to use!
-    'past_periods': 16 # number of periods to look back for stockout! ie how many periods are given to the neural network policy as input
+  'instock': # set past_periods to 0 if you don't want to use!
+    'past_periods': 16 # number of periods to look back for instock! ie how many periods are given to the neural network policy as input
     'period_shift': 0 # start x periods after the first period in the dataset 
   # 'time_product_features_tensor':  # comment out if you don't want to use time product features!
-  #   'past_periods': 16 # Use same number of periods as demand and stockout
+  #   'past_periods': 16 # Use same number of periods as demand and instock
   #   'period_shift': 0 # start x periods after the first period in the dataset
   'product_features': # comment out if you don't want to use product features. If you set an empty list, it will raise an error! (i need to fix this bug)
     'features': ['Store', 'Product']  # currently can use ['Store', 'Product', 'ProductGroup', 'Division', 'Department', 'DepartmentGroup', 'StoreFormat', 'Format']
@@ -77,7 +77,7 @@ store_params:
     'expand': False
     'clip': False
     'decimals': 3
-  'stockout': # set past_periods to 0 if you don't want to use! but dont comment out
+  'instock': # set past_periods to 0 if you don't want to use! but dont comment out
     'file_location': 'vn2_processed_data/new_data/stock.pt'
     'sample_across_stores': False
     'expand': False

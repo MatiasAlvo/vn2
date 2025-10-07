@@ -50,9 +50,9 @@ class Simulator(gym.Env):
             'period_shift': observation_params['demand']['period_shift'],
             }
         
-        # Add stockouts to internal data if available
-        if 'stockouts' in data:
-            self._internal_data['stockouts'] = data['stockouts']
+        # Add instocks to internal data if available
+        if 'instocks' in data:
+            self._internal_data['instocks'] = data['instocks']
         
         # Add time product features to internal data if available
         time_product_feature_keys = [k for k in data.keys() if k.startswith('time_product_feature_')]
@@ -345,9 +345,9 @@ class Simulator(gym.Env):
         if observation_params['demand']['past_periods'] > 0:
             observation['past_demands'] = self.update_past_demands(data, observation_params, self.batch_size, self.n_stores, current_period=0)
 
-        # Initialize past stockouts in the observation
-        if 'stockout' in observation_params and observation_params['stockout']['past_periods'] > 0 and 'stockouts' in data:
-            observation['past_stockouts'] = self.update_past_stockouts(data, observation_params, self.batch_size, self.n_stores, current_period=0)
+        # Initialize past instocks in the observation
+        if 'instock' in observation_params and observation_params['instock']['past_periods'] > 0 and 'instocks' in data:
+            observation['past_instocks'] = self.update_past_instocks(data, observation_params, self.batch_size, self.n_stores, current_period=0)
 
         # Initialize past time product features in the observation
         if 'time_product_features_tensor' in observation_params and observation_params['time_product_features_tensor']['past_periods'] > 0:
@@ -488,29 +488,29 @@ class Simulator(gym.Env):
         
         return past_demands
     
-    def update_past_stockouts(self, data, observation_params, batch_size, stores, current_period):
+    def update_past_instocks(self, data, observation_params, batch_size, stores, current_period):
         """
-        Update the past stockouts in the observation
+        Update the past instocks in the observation
         """
         
-        past_periods = observation_params['stockout']['past_periods']
+        past_periods = observation_params['instock']['past_periods']
         current_period_shifted = current_period + self._internal_data['period_shift']
         
         if current_period_shifted == 0:
-            past_stockouts = torch.zeros(batch_size, stores, past_periods).to(self.device)
+            past_instocks = torch.zeros(batch_size, stores, past_periods).to(self.device)
         # If current_period_shifted < past_periods, we fill with zeros at the left
         else:
-            past_stockouts = data['stockouts'][:, :, max(0, current_period_shifted - past_periods): current_period_shifted]
+            past_instocks = data['instocks'][:, :, max(0, current_period_shifted - past_periods): current_period_shifted]
 
             fill_with_zeros = past_periods - (current_period_shifted - max(0, current_period_shifted - past_periods))
             if fill_with_zeros > 0:
-                past_stockouts = torch.cat([
+                past_instocks = torch.cat([
                     torch.zeros(batch_size, stores, fill_with_zeros).to(self.device), 
-                    past_stockouts
+                    past_instocks
                     ], 
                     dim=2)
         
-        return past_stockouts
+        return past_instocks
     
     def update_past_time_product_features(self, data, observation_params, batch_size, stores, current_period, feature_key):
         """
@@ -579,14 +579,14 @@ class Simulator(gym.Env):
                 current_period=min(self.observation['current_period'].item() + 1, self._internal_data['demands'].shape[2])  # do this before updating current period!
                 )
         
-        # Update past stockouts
-        if 'stockout' in self.observation_params and self.observation_params['stockout']['past_periods'] > 0 and 'stockouts' in self._internal_data:
-            self.observation['past_stockouts'] = self.update_past_stockouts(
+        # Update past instocks
+        if 'instock' in self.observation_params and self.observation_params['instock']['past_periods'] > 0 and 'instocks' in self._internal_data:
+            self.observation['past_instocks'] = self.update_past_instocks(
                 self._internal_data,
                 self.observation_params,
                 self.batch_size,
                 self.n_stores,
-                current_period=min(self.observation['current_period'].item() + 1, self._internal_data['stockouts'].shape[2])  # do this before updating current period!
+                current_period=min(self.observation['current_period'].item() + 1, self._internal_data['instocks'].shape[2])  # do this before updating current period!
                 )
         
         # Update past time product features

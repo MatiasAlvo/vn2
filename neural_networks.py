@@ -217,9 +217,9 @@ class DataDrivenNet(MyNeuralNetwork):
             observation['past_demands'],
         ])
         
-        # Add stockout features if available
-        if 'past_stockouts' in observation:
-            input_features.append(observation['past_stockouts'])
+        # Add instock features if available
+        if 'past_instocks' in observation:
+            input_features.append(observation['past_instocks'])
         
         # Add time product features if available
         time_product_feature_keys = [k for k in observation.keys() if k.startswith('past_time_product_feature_')]
@@ -283,7 +283,7 @@ class MeanLastXBaseline(MyNeuralNetwork):
         wml = args.get('wml', {})
         self.lookback_weeks    = int(wml.get('lookback_weeks', 8))
         self.round_orders      = bool(wml.get('round_orders', False))
-        self.use_stockout_mask = bool(wml.get('use_stockout_mask', True))
+        self.use_instock_mask = bool(wml.get('use_instock_mask', True))
         self.eps               = float(wml.get('eps', 1e-6))
 
         self.learn_coverage = args['mlx']['learn_coverage']
@@ -303,7 +303,7 @@ class MeanLastXBaseline(MyNeuralNetwork):
     def forward(self, observation):
         past_demands = observation['past_demands']            # [B,S,Lw]
         store_inventories = observation['store_inventories']  # [B,S,Dinv]
-        stockouts = observation.get('past_stockouts', None)   # [B,S,Lw] or None
+        instocks = observation.get('past_instocks', None)   # [B,S,Lw] or None
 
         B, S, Lw = past_demands.shape
         K = min(Lw, self.lookback_weeks)
@@ -311,8 +311,8 @@ class MeanLastXBaseline(MyNeuralNetwork):
             return {'stores': torch.zeros(B, S, 1, device=past_demands.device)}
 
         # NOTE: preserving your masking logic exactly as provided
-        if stockouts is not None:
-            mask = stockouts.float()                          # 1 where stockout occurred
+        if instocks is not None:
+            mask = instocks.float()                          # 1 where instock occurred
             masked_demands = past_demands * mask
             sum_demands = masked_demands[:, :, -K:].sum(dim=2)
             count = mask[:, :, -K:].sum(dim=2).clamp(min=self.eps)

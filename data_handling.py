@@ -17,7 +17,7 @@ class Scenario():
         self.observation_params = observation_params
         self.seeds = seeds
         self.demands = self.generate_demand_samples(problem_params, store_params, store_params['demand'], seeds)
-        self.stockouts = self.generate_stockout_samples(problem_params, store_params, store_params.get('stockout', {}), seeds)
+        self.instocks = self.generate_instock_samples(problem_params, store_params, store_params.get('instock', {}), seeds)
         self.time_product_features_tensor = self.generate_time_product_features_samples(problem_params, store_params, store_params.get('time_product_features_tensor', {}), seeds)
         self.product_features = self.generate_product_features_samples(problem_params, store_params, store_params.get('product_features', {}), seeds)
         self.underage_costs = self.generate_data_for_samples_and_stores(problem_params, store_params['underage_cost'], seeds['underage_cost'], discrete=False)
@@ -60,7 +60,7 @@ class Scenario():
         """
 
         data =  {'demands': self.demands,
-                'stockouts': self.stockouts,
+                'instocks': self.instocks,
                 'underage_costs': self.underage_costs,
                 'holding_costs': self.holding_costs,
                 'lead_times': self.lead_times,
@@ -124,12 +124,12 @@ class Scenario():
         else:
             split_by['sample_index'].append('demands')
         
-        # Handle stockouts - same logic as demands
-        if self.stockouts is not None:
+        # Handle instocks - same logic as demands
+        if self.instocks is not None:
             if self.store_params['demand']['distribution'] == 'real':
-                split_by['period'].append('stockouts')
+                split_by['period'].append('instocks')
             else:
-                split_by['sample_index'].append('stockouts')
+                split_by['sample_index'].append('instocks')
         
         # Handle time product features tensor - same logic as demands
         if self.time_product_features_tensor is not None:
@@ -187,16 +187,16 @@ class Scenario():
         
         return torch.tensor(demand)
 
-    def generate_stockout_samples(self, problem_params, store_params, stockout_params, seeds):
+    def generate_instock_samples(self, problem_params, store_params, instock_params, seeds):
         """
-        Generate stockout data
+        Generate instock data
         """
-        if not stockout_params or 'file_location' not in stockout_params:
+        if not instock_params or 'file_location' not in instock_params:
             return None
             
-        # Read real stockout data
-        stockouts = torch.load(stockout_params['file_location'])[: self.num_samples]
-        return stockouts
+        # Read real instock data
+        instocks = torch.load(instock_params['file_location'])[: self.num_samples]
+        return instocks
 
     def generate_time_product_features_samples(self, problem_params, store_params, time_product_features_params, seeds):
         """
