@@ -16,7 +16,7 @@ test_seeds :  # Seeds for test set
   'demand': 65
   'initial_inventory': 4839
 
-sample_data_params:
+sample_data_params: # define the periods to consider for train, dev and test sets
   'split_by_period': True
   'train_periods': (0, 120)
   'dev_periods': (118, 157)
@@ -27,7 +27,7 @@ problem_params :
   'n_warehouses': 0
   'n_extra_echelons': 0
   'lost_demand': True
-  'maximize_profit': False
+  'maximize_profit': False # False mean minimizing cost, True means maximizing profit
 
 params_by_dataset : 
   'train': 
@@ -65,7 +65,7 @@ observation_params:
   'product_features': 
     'features': ['Store', 'Product']
     # 'features': ['Store', 'Product', 'ProductGroup', 'Division', 'Department', 'DepartmentGroup', 'StoreFormat', 'Format']
-  'time_features_file': 'vn2_processed_data/date_features.csv'
+  'time_features_file': 'vn2_processed_data/new_data/date_features.csv'
   'time_features':
     ['days_from_christmas', 'day_of_month', 'month_1', 'month_2', 'month_3', 'month_4', 'month_5', 'month_6', 'month_7', 'month_8', 'month_9', 'month_10', 'month_11', 'month_12']
   'sample_features': null
