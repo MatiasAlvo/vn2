@@ -1,2 +1,11 @@
 vn2_data_analysis_backup.ipynb
 main_run_backup.ipynb
+lgbm_forecasting.ipynb
+
+# dont include lbgm_predictions_splits folder
+lgbm_predictions_splits/
+lgbm_predictions_power/
+lgbm_predictions/
+saved_models/
+vn2_processed_data/
+predictions/
